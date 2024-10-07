@@ -22,8 +22,16 @@ def init_db():
         ''')
         conn.commit()
 
-# Initialize the database when the application starts
-init_db()
+def get_db_connection():
+    """Create and return a new database connection."""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row  # Allows us to access columns by name
+    return conn
+
+@app.before_first_request
+def setup():
+    """Initialize the database before the first request."""
+    init_db()
 
 # Route to handle incoming SMS
 @app.route('/receive_sms', methods=['POST'])
@@ -50,6 +58,28 @@ def receive_sms():
             return jsonify({"error": "Error: sms_id must be unique."}), 400
     else:
         return jsonify({"error": "Error: Missing parameters."}), 400
+
+# New endpoint to get SMS records
+@app.route('/get_sms', methods=['GET'])
+def get_sms():
+    """Retrieve all SMS records from the database."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM sms')
+        sms_records = cursor.fetchall()
+
+        # Convert records to a list of dictionaries
+        sms_list = []
+        for record in sms_records:
+            sms_list.append({
+                "id": record["id"],
+                "from_number": record["from_number"],
+                "to_number": record["to_number"],
+                "message": record["message"],
+                "sms_id": record["sms_id"]
+            })
+
+    return jsonify(sms_list), 200
 
 # Run the app
 if __name__ == '__main__':
