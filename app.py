@@ -28,11 +28,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row  # Allows us to access columns by name
     return conn
 
-@app.before_first_request
-def setup():
-    """Initialize the database before the first request."""
-    init_db()
-
 # Route to handle incoming SMS
 @app.route('/receive_sms', methods=['POST'])
 def receive_sms():
@@ -53,7 +48,7 @@ def receive_sms():
                     VALUES (?, ?, ?, ?)
                 ''', (from_number, to_number, message, sms_id))
                 conn.commit()
-            return jsonify({"message": "Message received and stored in database."}), 200
+            return jsonify({"message": "Message data stored in the database."}), 200
         except sqlite3.IntegrityError:
             return jsonify({"error": "Error: sms_id must be unique."}), 400
     else:
@@ -81,6 +76,7 @@ def get_sms():
 
     return jsonify(sms_list), 200
 
-# Run the app
+# Run the app and initialize the database
 if __name__ == '__main__':
+    init_db()  # Initialize the database when the app starts
     app.run(host='0.0.0.0', port=5000)
